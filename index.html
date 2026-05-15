@@ -1,0 +1,52 @@
+<script>
+    async function generateImage() {
+        // .trim() removes accidental spaces from your key
+        const key = document.getElementById('hfKey').value.trim();
+        const prompt = document.getElementById('promptIn').value.trim();
+        const outputDiv = document.getElementById('imageOutput');
+
+        if(!key || !prompt) {
+            alert("Please paste your hf_ key and type a description!");
+            return;
+        }
+
+        outputDiv.innerHTML = `
+            <div class="flex flex-col items-center">
+                <div class="loading-spinner"></div>
+                <p class="text-[10px] mt-4 text-yellow-500 animate-pulse uppercase tracking-widest">Alkali AI is drawing...</p>
+            </div>`;
+
+        try {
+            const response = await fetch(
+                "https://api-inference.huggingface.co/models/black-forest-labs/FLUX.1-schnell",
+                {
+                    headers: { 
+                        "Authorization": `Bearer ${key}`,
+                        "Content-Type": "application/json" 
+                    },
+                    method: "POST",
+                    body: JSON.stringify({ inputs: prompt }),
+                }
+            );
+
+            // If the model is "loading" on Hugging Face's side
+            if (response.status === 503) {
+                outputDiv.innerHTML = '<p class="text-yellow-500 text-[10px] text-center">AI is waking up... Wait 10 seconds and click Generate again.</p>';
+                return;
+            }
+
+            if (!response.ok) throw new Error('Key Error');
+
+            const result = await response.blob();
+            const imageUrl = URL.createObjectURL(result);
+            outputDiv.innerHTML = `<img src="${imageUrl}" class="w-full h-full object-cover rounded-2xl shadow-2xl">`;
+            
+        } catch (error) {
+            outputDiv.innerHTML = `
+                <div class="text-center px-6">
+                    <p class="text-red-500 text-[10px] uppercase font-bold">Generation Failed</p>
+                    <p class="text-[9px] text-gray-500 mt-2">1. Ensure your key starts with hf_ <br> 2. Make sure you have internet data <br> 3. Click Generate again</p>
+                </div>`;
+        }
+    }
+                  </script>
